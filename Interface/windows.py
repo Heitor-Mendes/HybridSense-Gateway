@@ -130,10 +130,10 @@ class Aplicativo(ctk.CTk):
         self.label_principal = ctk.CTkLabel(self.frame_principal, text="Bem-Vindo ao HibridSense Gateway", font=ctk.CTkFont(size=48, weight="bold"), text_color="blue")
         self.label_principal.grid(row=0, column=0, pady=20, sticky="nsew")
 
-        self.label_adjacente = ctk.CTkLabel(self.frame_principal, text="Escolha a opcao na barra lateral", font=ctk.CTkFont(size=48, weight="bold"))
+        self.label_adjacente = ctk.CTkLabel(self.frame_principal, text="Escolha a opção na barra lateral", font=ctk.CTkFont(size=48, weight="bold"))
         self.label_adjacente.grid(row=1, column=0, pady=20, sticky="nsew")
 
-        imagem_ctk_del       = ctk.CTkImage(light_image=imagem_del,  dark_image=imagem_del,  size=(250,250))
+        imagem_ctk_del       = ctk.CTkImage(light_image=imagem_del,  dark_image=imagem_del,  size=(200,200))
 
 
 
