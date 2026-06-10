@@ -25,7 +25,7 @@ def comando():
 
         cliente.send(str(opcao).encode())
 
-        resposta = cliente.recv(1024).decode()
+        resposta = cliente.recv(1024).decode() # bloqueante ponto de atencao
 
         cliente.close()
 
