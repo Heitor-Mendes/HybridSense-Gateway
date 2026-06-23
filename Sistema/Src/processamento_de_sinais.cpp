@@ -1,4 +1,4 @@
-#include "../Include/ProcessamentoDeSinais.h"
+#include "../Include/processamento_de_sinais.h"
 
 #include <cmath>
 #include <stdexcept>

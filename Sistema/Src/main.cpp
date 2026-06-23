@@ -4,8 +4,8 @@
 #include <vector>
 #include <limits>
 
-#include "../Include/sensorVirtual.h"
-#include "../Include/processamentoDeSinais.h"
+#include "../Include/sensor_virtual.h"
+#include "../Include/processamento_de_sinais.h"
 
 using namespace std;
 

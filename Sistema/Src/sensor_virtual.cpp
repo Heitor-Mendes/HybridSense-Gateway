@@ -1,4 +1,4 @@
-#include "../Include/sensorVirtual.h"
+#include "../Include/sensor_virtual.h"
 
 #include <cmath>
 #include <sstream>
