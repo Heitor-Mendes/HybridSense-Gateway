@@ -110,6 +110,12 @@ def comando():
     if dados is None:
         return jsonify({"sucesso": False, "mensagem": "JSON invalido ou vazio."}), 400
 
+    comando_recebido = dados.get("comando", "")
+
+    if comando_recebido == "cancelar_fluxo":
+        voltar_para_comandos()
+        return jsonify({"sucesso": True, "mensagem": "Fluxo cancelado.", "proximaRota": ROTA_COMANDOS})
+
     if estado_fluxo["rota_esperada"] != ROTA_COMANDOS:
         return jsonify({
             "sucesso": False,
@@ -117,12 +123,6 @@ def comando():
             "rotaEsperada": estado_fluxo["rota_esperada"],
             "comandoAtual": estado_fluxo["comando_atual"]
         }), 409
-
-    comando_recebido = dados.get("comando", "")
-
-    if comando_recebido == "cancelar_fluxo":
-        voltar_para_comandos()
-        return jsonify({"sucesso": True, "mensagem": "Fluxo cancelado.", "proximaRota": ROTA_COMANDOS})
 
     proxima_rota = definir_proxima_rota(comando_recebido)
 
@@ -144,7 +144,6 @@ def comando():
         "proximaRota": proxima_rota,
         "topicoLista": "/Sistema/SensoresVirtuais/Lista" if comando_recebido != "adicionar_sensor_virtual" else None
     })
-
 
 @routes.route("/Sistema/SensoresVirtuais/Lista", methods=["GET"])
 def listar_sensores_virtuais():
