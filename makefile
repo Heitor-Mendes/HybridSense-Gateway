@@ -1,16 +1,16 @@
-# Nome do executável final
+# Nome do executavel final
 TARGET = programa.exe
 
-# Diretórios
+# Diretorios
 SRC_DIR = sistema/src
 INC_DIR = sistema/include
 OBJ_DIR = obj
 
 # Compilador e Flags
 CXX = g++
-CXXFLAGS = -Wall -Wextra -std=c++17 -I$(INC_DIR)
+CXXFLAGS = -Wall -Wextra -std=c++11 -I$(INC_DIR)
 
-# Bibliotecas de linkedição
+# Bibliotecas de linkedicao
 LDFLAGS = -lws2_32
 
 # Procura automaticamente por todos os arquivos .cpp na pasta src
@@ -22,7 +22,7 @@ OBJS = $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(SRCS))
 # Regra principal
 all: $(TARGET)
 
-# Regra para linkar os objetos e gerar o executável
+# Regra para linkar os objetos e gerar o executavel
 $(TARGET): $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
