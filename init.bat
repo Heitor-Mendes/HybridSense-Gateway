@@ -27,7 +27,7 @@ echo ===========================================
 start "API Python" python API/main.py
 
 :: Abre a Interface em outra janela
-start "Interface Python" python Interface/window.py
+start "Interface Python" python Interface/interfacei.py
 
 echo.
 echo ===========================================

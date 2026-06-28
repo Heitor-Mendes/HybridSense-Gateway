@@ -22,8 +22,16 @@ estado_fluxo = {
 topico_sensores_virtuais = {"sucesso": True, "mensagem": "Nenhum sensor virtual cadastrado.", "sensores": []}
 topico_simulacao_virtual = {"sucesso": False, "mensagem": "Nenhuma simulacao realizada.", "sinal": []}
 topico_processamento_virtual = {"sucesso": False, "mensagem": "Nenhum processamento realizado.", "metricas": {}, "sinais": {}}
-topico_sensor_real_dados = {"sucesso": False, "mensagem": "Leitura de sensor real ainda nao implementada.", "sinal": []}
-topico_sensor_real_processamento = {"sucesso": False, "mensagem": "Processamento de sensor real ainda nao implementado.", "metricas": {}, "sinais": {}}
+
+config_sensor_real = {
+    "configurado": False,
+    "portaSerial": "",
+    "baudRate": 115200,
+    "tamanhoBuffer": 50
+}
+
+topico_sensor_real_dados = {"sucesso": False, "mensagem": "Sensor real ainda nao configurado.", "sinal": []}
+topico_sensor_real_processamento = {"sucesso": False, "mensagem": "Sensor real ainda nao configurado.", "metricas": {}, "sinais": {}}
 
 
 def enviar_para_cpp(payload):
@@ -38,6 +46,7 @@ def enviar_para_cpp(payload):
             resposta = ""
             while True:
                 parte = cliente.recv(4096).decode("utf-8")
+
                 if not parte:
                     break
 
@@ -103,6 +112,59 @@ def atualizar_lista_sensores_virtuais():
     return resposta_cpp
 
 
+def validar_config_sensor_real(dados):
+    if dados is None:
+        return False, "JSON invalido ou vazio."
+
+    if "portaSerial" not in dados:
+        return False, "Campo obrigatorio ausente: portaSerial"
+
+    if "baudRate" not in dados:
+        return False, "Campo obrigatorio ausente: baudRate"
+
+    if "tamanhoBuffer" not in dados:
+        return False, "Campo obrigatorio ausente: tamanhoBuffer"
+
+    try:
+        baud_rate = int(dados["baudRate"])
+        tamanho_buffer = int(dados["tamanhoBuffer"])
+    except (ValueError, TypeError):
+        return False, "baudRate e tamanhoBuffer devem ser numericos."
+
+    if str(dados["portaSerial"]).strip() == "":
+        return False, "portaSerial nao pode ser vazia."
+
+    if baud_rate not in [9600, 19200, 38400, 57600, 115200]:
+        return False, "baudRate invalido. Use uma das opcoes: 9600, 19200, 38400, 57600 ou 115200."
+
+    if tamanho_buffer not in [25, 50, 100]:
+        return False, "tamanhoBuffer invalido. Use uma das opcoes: 25, 50 ou 100."
+
+    return True, ""
+
+
+def montar_payload_leitura_sensor_real():
+    return {
+        "comando": "ler_dados_sensor_real",
+        "dados": {
+            "portaSerial": config_sensor_real["portaSerial"],
+            "baudRate": config_sensor_real["baudRate"],
+            "tamanhoBuffer": config_sensor_real["tamanhoBuffer"]
+        }
+    }
+
+
+def montar_payload_processamento_sensor_real():
+    return {
+        "comando": "processar_sinais_sensor_real",
+        "dados": {
+            "portaSerial": config_sensor_real["portaSerial"],
+            "baudRate": config_sensor_real["baudRate"],
+            "tamanhoBuffer": config_sensor_real["tamanhoBuffer"]
+        }
+    }
+
+
 @routes.route("/Sistema/Comandos", methods=["POST"])
 def comando():
     dados = request.get_json()
@@ -144,6 +206,7 @@ def comando():
         "proximaRota": proxima_rota,
         "topicoLista": "/Sistema/SensoresVirtuais/Lista" if comando_recebido != "adicionar_sensor_virtual" else None
     })
+
 
 @routes.route("/Sistema/SensoresVirtuais/Lista", methods=["GET"])
 def listar_sensores_virtuais():
@@ -259,27 +322,83 @@ def ler_processamento_de_sinais():
     return jsonify(topico_processamento_virtual)
 
 
-@routes.route("/Sistema/SensorReal/Dados", methods=["GET"])
+@routes.route("/Sistema/SensorReal/Dados", methods=["POST", "GET"])
 def ler_dados_reais():
+    global config_sensor_real
     global topico_sensor_real_dados
 
-    payload_cpp = {"comando": "ler_dados_sensor_real", "dados": {}}
-    resposta_cpp = enviar_para_cpp(payload_cpp)
+    if request.method == "POST":
+        dados = request.get_json()
+        valido, mensagem = validar_config_sensor_real(dados)
 
-    if resposta_cpp.get("sucesso", False):
-        topico_sensor_real_dados = resposta_cpp
+        if not valido:
+            return jsonify({"sucesso": False, "mensagem": mensagem, "sinal": []}), 400
 
-    return jsonify(topico_sensor_real_dados)
+        config_sensor_real["configurado"] = True
+        config_sensor_real["portaSerial"] = str(dados["portaSerial"]).strip()
+        config_sensor_real["baudRate"] = int(dados["baudRate"])
+        config_sensor_real["tamanhoBuffer"] = int(dados["tamanhoBuffer"])
+
+        payload_cpp = montar_payload_leitura_sensor_real()
+        resposta_cpp = enviar_para_cpp(payload_cpp)
+
+        if resposta_cpp.get("sucesso", False):
+            topico_sensor_real_dados = resposta_cpp
+        else:
+            topico_sensor_real_dados = {
+                "sucesso": False,
+                "mensagem": resposta_cpp.get("mensagem", "Erro ao ler sensor real."),
+                "sinal": []
+            }
+
+        return jsonify(topico_sensor_real_dados)
+
+    if request.method == "GET":
+        if not config_sensor_real["configurado"]:
+            return jsonify({
+                "sucesso": False,
+                "mensagem": "Sensor real ainda nao configurado. Envie primeiro portaSerial, baudRate e tamanhoBuffer.",
+                "sinal": []
+            }), 400
+
+        payload_cpp = montar_payload_leitura_sensor_real()
+        resposta_cpp = enviar_para_cpp(payload_cpp)
+
+        if resposta_cpp.get("sucesso", False):
+            topico_sensor_real_dados = resposta_cpp
+        else:
+            topico_sensor_real_dados = {
+                "sucesso": False,
+                "mensagem": resposta_cpp.get("mensagem", "Erro ao ler sensor real."),
+                "sinal": []
+            }
+
+        return jsonify(topico_sensor_real_dados)
 
 
 @routes.route("/Sistema/SensorReal/ProcessamentoDeSinais", methods=["GET"])
 def ler_processamento_real():
     global topico_sensor_real_processamento
 
-    payload_cpp = {"comando": "processar_sinais_sensor_real", "dados": {}}
+    if not config_sensor_real["configurado"]:
+        return jsonify({
+            "sucesso": False,
+            "mensagem": "Sensor real ainda nao configurado. Configure portaSerial, baudRate e tamanhoBuffer antes de processar.",
+            "metricas": {},
+            "sinais": {}
+        }), 400
+
+    payload_cpp = montar_payload_processamento_sensor_real()
     resposta_cpp = enviar_para_cpp(payload_cpp)
 
     if resposta_cpp.get("sucesso", False):
         topico_sensor_real_processamento = resposta_cpp
+    else:
+        topico_sensor_real_processamento = {
+            "sucesso": False,
+            "mensagem": resposta_cpp.get("mensagem", "Erro ao processar sensor real."),
+            "metricas": {},
+            "sinais": {}
+        }
 
     return jsonify(topico_sensor_real_processamento)

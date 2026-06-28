@@ -18,6 +18,10 @@ class Aplicativo(ctk.CTk):
         self.title("HybridSense Gateway")
         self.geometry("1320x720")
 
+        self.porta_serial_real = None
+        self.baud_rate_real = None
+        self.tamanho_buffer_real = None
+
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
@@ -70,6 +74,7 @@ class Aplicativo(ctk.CTk):
             self.frame_iniciar_simulacao(resposta)
 
         elif opcao == "Ler Sensor Porta Serial":
+            api.cancelar_fluxo()
             self.frame_ler_sensor_real()
 
         elif opcao == "Processamento de Sinais Virtuais":
@@ -77,6 +82,7 @@ class Aplicativo(ctk.CTk):
             self.frame_processamento_sinais_virtuais(resposta)
 
         elif opcao == "Processamento de Sinais Físicos":
+            api.cancelar_fluxo()
             self.frame_processamento_sinais_fisicos()
 
     def voltar_home(self):
@@ -121,6 +127,7 @@ class Aplicativo(ctk.CTk):
 
     def frame_adicionar_sensor(self, resposta_comando=None):
         self.clear_frame()
+        self.preparar_layout_formulario()
         self.titulo("Adicionar Sensor Virtual")
 
         if resposta_comando and not resposta_comando.get("sucesso", False):
@@ -161,6 +168,7 @@ class Aplicativo(ctk.CTk):
 
     def frame_remover_sensor(self, resposta_comando=None):
         self.clear_frame()
+        self.preparar_layout_formulario()
         self.titulo("Remover Sensor Virtual")
 
         if resposta_comando and not resposta_comando.get("sucesso", False):
@@ -181,6 +189,7 @@ class Aplicativo(ctk.CTk):
 
     def frame_iniciar_simulacao(self, resposta_comando=None):
         self.clear_frame()
+        self.preparar_layout_formulario()
         self.titulo("Iniciar Simulação")
 
         if resposta_comando and not resposta_comando.get("sucesso", False):
@@ -203,6 +212,7 @@ class Aplicativo(ctk.CTk):
 
     def frame_processamento_sinais_virtuais(self, resposta_comando=None):
         self.clear_frame()
+        self.preparar_layout_formulario()
         self.titulo("Processamento de Sinais Virtuais")
 
         if resposta_comando and not resposta_comando.get("sucesso", False):
@@ -224,27 +234,85 @@ class Aplicativo(ctk.CTk):
 
     def frame_ler_sensor_real(self):
         self.clear_frame()
+        self.preparar_layout_formulario()
         self.titulo("Leitura do Sensor Físico")
 
-        resposta = api.ler_sensor_real()
+        frame_form = ctk.CTkFrame(self.frame_principal, corner_radius=18)
+        frame_form.grid(row=1, column=0, padx=280, pady=20, sticky="ew")
+        frame_form.grid_columnconfigure(0, weight=1)
+
+        label_info = ctk.CTkLabel(frame_form, text="Configure a comunicação serial do ESP32", font=ctk.CTkFont(size=24, weight="bold"), text_color="#D9D9D9")
+        label_info.grid(row=0, column=0, padx=30, pady=(25, 5), sticky="ew")
+
+        label_porta = ctk.CTkLabel(frame_form, text="Porta serial", font=ctk.CTkFont(size=18), anchor="w")
+        label_porta.grid(row=1, column=0, padx=35, pady=(14, 0), sticky="ew")
+
+        portas = ["COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM10", "COM11", "COM12", "COM13", "COM14", "COM15", "COM16", "COM17", "COM18", "COM19", "COM20", "/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyACM0", "/dev/ttyACM1"]
+        self.sensor_real_porta = ctk.CTkOptionMenu(frame_form, values=portas, width=420, height=50, font=ctk.CTkFont(size=22))
+        self.sensor_real_porta.set(self.porta_serial_real if self.porta_serial_real else "COM3")
+        self.sensor_real_porta.grid(row=2, column=0, padx=30, pady=8, sticky="ew")
+
+        label_baud = ctk.CTkLabel(frame_form, text="Baud rate", font=ctk.CTkFont(size=18), anchor="w")
+        label_baud.grid(row=3, column=0, padx=35, pady=(10, 0), sticky="ew")
+
+        self.sensor_real_baud = ctk.CTkOptionMenu(frame_form, values=["9600", "19200", "38400", "57600", "115200"], width=420, height=50, font=ctk.CTkFont(size=22))
+        self.sensor_real_baud.set(str(self.baud_rate_real) if self.baud_rate_real else "115200")
+        self.sensor_real_baud.grid(row=4, column=0, padx=30, pady=8, sticky="ew")
+
+        label_buffer = ctk.CTkLabel(frame_form, text="Tamanho do buffer", font=ctk.CTkFont(size=18), anchor="w")
+        label_buffer.grid(row=5, column=0, padx=35, pady=(10, 0), sticky="ew")
+
+        self.sensor_real_buffer = ctk.CTkOptionMenu(frame_form, values=["25", "50", "100"], width=420, height=50, font=ctk.CTkFont(size=22))
+        self.sensor_real_buffer.set(str(self.tamanho_buffer_real) if self.tamanho_buffer_real else "50")
+        self.sensor_real_buffer.grid(row=6, column=0, padx=30, pady=8, sticky="ew")
+
+        btn_salvar = ctk.CTkButton(frame_form, text="Salvar e iniciar leitura", height=55, font=ctk.CTkFont(size=22), command=self.confirmar_configuracao_sensor_real)
+        btn_salvar.grid(row=7, column=0, padx=30, pady=(18, 28), sticky="ew")
+
+        self.botao_voltar(2)
+
+    def confirmar_configuracao_sensor_real(self):
+        porta_serial = self.sensor_real_porta.get()
+        baud_rate = int(self.sensor_real_baud.get())
+        tamanho_buffer = int(self.sensor_real_buffer.get())
+
+        self.porta_serial_real = porta_serial
+        self.baud_rate_real = baud_rate
+        self.tamanho_buffer_real = tamanho_buffer
+
+        resposta = api.configurar_sensor_real(porta_serial, baud_rate, tamanho_buffer)
 
         if not resposta.get("sucesso", False):
-            self.mensagem(resposta.get("mensagem", "Sensor físico ainda não implementado."), 1)
-            self.botao_voltar(2)
+            self.frame_resultado_simples("Erro", resposta.get("mensagem", "Erro ao configurar e ler sensor físico."))
             return
 
         sinal = resposta.get("sinal", [])
-        self.frame_plot_sinal("Sinal Físico", sinal, "Amostras do sensor real")
+        descricao = f"Amostras do sensor real em {porta_serial} @ {baud_rate} baud | Buffer: {tamanho_buffer}"
+        self.frame_plot_sensor_real(sinal, descricao)
+
+    def atualizar_leitura_sensor_real(self):
+        resposta = api.ler_sensor_real()
+
+        if not resposta.get("sucesso", False):
+            self.frame_resultado_simples("Erro", resposta.get("mensagem", "Erro ao atualizar leitura do sensor físico."))
+            return
+
+        sinal = resposta.get("sinal", [])
+        descricao = f"Amostras do sensor real em {self.porta_serial_real} @ {self.baud_rate_real} baud | Buffer: {self.tamanho_buffer_real}"
+        self.frame_plot_sensor_real(sinal, descricao)
 
     def frame_processamento_sinais_fisicos(self):
         self.clear_frame()
+        self.preparar_layout_formulario()
         self.titulo("Processamento de Sinais Físicos")
 
         resposta = api.processar_sinais_real()
 
         if not resposta.get("sucesso", False):
-            self.mensagem(resposta.get("mensagem", "Processamento físico ainda não implementado."), 1)
-            self.botao_voltar(2)
+            self.mensagem(resposta.get("mensagem", "Configure e leia o sensor físico antes de processar."), 1)
+            btn_configurar = ctk.CTkButton(self.frame_principal, text="Configurar Sensor Físico", height=50, font=ctk.CTkFont(size=20), command=self.frame_ler_sensor_real)
+            btn_configurar.grid(row=2, column=0, padx=280, pady=10, sticky="ew")
+            self.botao_voltar(3)
             return
 
         self.frame_resultado_processamento(resposta)
@@ -401,8 +469,59 @@ class Aplicativo(ctk.CTk):
 
         self.botao_voltar(3)
 
+    def frame_plot_sensor_real(self, sinal, descricao):
+        self.clear_frame()
+        self.preparar_layout_grafico()
+        self.titulo("Sinal Físico")
+
+        if len(sinal) == 0:
+            self.mensagem("Nenhuma amostra disponível para plotagem.", 1)
+            self.botao_voltar(2)
+            return
+
+        label = ctk.CTkLabel(self.frame_principal, text=descricao, font=ctk.CTkFont(size=20))
+        label.grid(row=1, column=0, padx=20, pady=(0, 5), sticky="nsew")
+
+        frame_grafico = ctk.CTkFrame(self.frame_principal, corner_radius=18)
+        frame_grafico.grid(row=2, column=0, padx=18, pady=8, sticky="nsew")
+        frame_grafico.grid_rowconfigure(0, weight=1)
+        frame_grafico.grid_columnconfigure(0, weight=1)
+
+        figura = Figure(figsize=(12, 6), dpi=100)
+        figura.patch.set_facecolor("#2B2B2B")
+
+        eixo = figura.add_subplot(111)
+        eixo.set_facecolor("#1E1E1E")
+        eixo.plot(sinal, linewidth=1.8, color="#3B8ED0")
+        eixo.set_title("Leitura Serial do ESP32", color="white", fontsize=16)
+        eixo.set_xlabel("Amostra", color="white")
+        eixo.set_ylabel("Valor", color="white")
+        eixo.tick_params(colors="white")
+        eixo.grid(True, color="#444444", alpha=0.55)
+
+        for spine in eixo.spines.values():
+            spine.set_color("#666666")
+
+        figura.subplots_adjust(left=0.06, right=0.985, top=0.92, bottom=0.11)
+
+        canvas = FigureCanvasTkAgg(figura, master=frame_grafico)
+        canvas.draw()
+        canvas.get_tk_widget().grid(row=0, column=0, sticky="nsew", padx=8, pady=8)
+
+        frame_botoes = ctk.CTkFrame(self.frame_principal, fg_color="transparent")
+        frame_botoes.grid(row=3, column=0, padx=280, pady=(6, 14), sticky="ew")
+        frame_botoes.grid_columnconfigure(0, weight=1)
+        frame_botoes.grid_columnconfigure(1, weight=1)
+
+        btn_atualizar = ctk.CTkButton(frame_botoes, text="Atualizar leitura", height=42, font=ctk.CTkFont(size=18), command=self.atualizar_leitura_sensor_real)
+        btn_atualizar.grid(row=0, column=0, padx=8, sticky="ew")
+
+        btn_voltar = ctk.CTkButton(frame_botoes, text="Voltar", height=42, font=ctk.CTkFont(size=18), command=self.voltar_home)
+        btn_voltar.grid(row=0, column=1, padx=8, sticky="ew")
+
     def frame_resultado_simples(self, titulo, mensagem):
         self.clear_frame()
+        self.preparar_layout_formulario()
         self.titulo(titulo)
 
         label = ctk.CTkLabel(self.frame_principal, text=mensagem, font=ctk.CTkFont(size=28), wraplength=850)
@@ -425,12 +544,20 @@ class Aplicativo(ctk.CTk):
     def clear_frame(self):
         for widget in self.frame_principal.winfo_children():
             widget.destroy()
+
+    def preparar_layout_formulario(self):
+        for i in range(8):
+            self.frame_principal.grid_rowconfigure(i, weight=0)
+
+        self.frame_principal.grid_columnconfigure(0, weight=1)
+
     def preparar_layout_grafico(self):
         for i in range(6):
             self.frame_principal.grid_rowconfigure(i, weight=0)
 
         self.frame_principal.grid_columnconfigure(0, weight=1)
         self.frame_principal.grid_rowconfigure(2, weight=1)
+
 
 janela = Aplicativo()
 janela.mainloop()

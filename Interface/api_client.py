@@ -6,16 +6,24 @@ TAMANHO_BUFFER_PADRAO = 1000
 
 def post_api(rota, payload):
     try:
-        resposta = requests.post(API_URL + rota, json=payload, timeout=5)
+        resposta = requests.post(API_URL + rota, json=payload, timeout=10)
         return resposta.json()
+    except requests.exceptions.ConnectionError:
+        return {"sucesso": False, "mensagem": "Nao foi possivel conectar com a API Flask. Verifique se o main.py da API esta rodando na porta 5000."}
+    except requests.exceptions.Timeout:
+        return {"sucesso": False, "mensagem": "Timeout ao tentar comunicar com a API Flask."}
     except Exception as erro:
         return {"sucesso": False, "mensagem": str(erro)}
 
 
 def get_api(rota):
     try:
-        resposta = requests.get(API_URL + rota, timeout=5)
+        resposta = requests.get(API_URL + rota, timeout=10)
         return resposta.json()
+    except requests.exceptions.ConnectionError:
+        return {"sucesso": False, "mensagem": "Nao foi possivel conectar com a API Flask. Verifique se o main.py da API esta rodando na porta 5000."}
+    except requests.exceptions.Timeout:
+        return {"sucesso": False, "mensagem": "Timeout ao tentar comunicar com a API Flask."}
     except Exception as erro:
         return {"sucesso": False, "mensagem": str(erro)}
 
@@ -58,6 +66,11 @@ def processar_sinais_virtual(endereco):
         return resposta_post
 
     return get_api("/Sistema/SensoresVirtuais/ProcessamentoDeSinais")
+
+
+def configurar_sensor_real(porta_serial, baud_rate, tamanho_buffer):
+    payload = {"portaSerial": porta_serial, "baudRate": int(baud_rate), "tamanhoBuffer": int(tamanho_buffer)}
+    return post_api("/Sistema/SensorReal/Dados", payload)
 
 
 def ler_sensor_real():

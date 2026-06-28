@@ -34,6 +34,9 @@ class TratadorDeRequisicoes {
         string tratarRemoverSensorVirtual(const string& json);
         string tratarSimularSensorVirtual(const string& json);
         string tratarProcessarSinaisSensorVirtual(const string& json);
+
+        string tratarLerDadosSensorReal(const string& json);
+        string tratarProcessarSinaisSensorReal(const string& json);
 };
 
 #endif

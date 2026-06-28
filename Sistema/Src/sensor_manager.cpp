@@ -4,6 +4,10 @@
 
 SensorManager::SensorManager() {
     proximoEndereco = 0x001;
+    sensorReal = nullptr;
+    portaSerialRealAtual = "";
+    baudRateRealAtual = 0;
+    tamanhoBufferRealAtual = 0;
 }
 
 SensorManager::~SensorManager() {
@@ -11,7 +15,6 @@ SensorManager::~SensorManager() {
 }
 
 unsigned SensorManager::adicionarSensorVirtual(string nome, float tensaoDeOperacao, ProtocoloSerial protocolo, unsigned tamanhoBuffer) {
-
     unsigned endereco = proximoEndereco;
     Sensor* sensor = new SensorVirtual(endereco, tamanhoBuffer, nome, tensaoDeOperacao, protocolo);
 
@@ -132,13 +135,88 @@ Resultado SensorManager::processarSinais(unsigned endereco) {
     return resultado;
 }
 
+vector<double> SensorManager::lerSensorReal(string portaSerial, int baudRate, unsigned tamanhoBuffer) {
+    if (portaSerial.empty()) {
+        throw invalid_argument("Porta serial nao pode ser vazia.");
+    }
+
+    if (baudRate <= 0) {
+        throw invalid_argument("Baud rate deve ser maior que zero.");
+    }
+
+    if (tamanhoBuffer == 0) {
+        throw invalid_argument("Tamanho do buffer do sensor real deve ser maior que zero.");
+    }
+
+    bool precisaRecriar = false;
+
+    if (sensorReal == nullptr) {
+        precisaRecriar = true;
+    }
+
+    if (portaSerialRealAtual != portaSerial || baudRateRealAtual != baudRate || tamanhoBufferRealAtual != tamanhoBuffer) {
+        precisaRecriar = true;
+    }
+
+    if (precisaRecriar) {
+        if (sensorReal != nullptr) {
+            delete sensorReal;
+            sensorReal = nullptr;
+        }
+
+        sensorReal = new SensorReal(0xFFF, tamanhoBuffer, "Sensor Real ESP32", 3.3f);
+        portaSerialRealAtual = portaSerial;
+        baudRateRealAtual = baudRate;
+        tamanhoBufferRealAtual = tamanhoBuffer;
+    }
+
+    sensorReal->configurar(portaSerial, baudRate);
+
+    return sensorReal->lerAmostras(tamanhoBuffer);
+}
+
+Resultado SensorManager::processarSinaisSensorReal() {
+    if (sensorReal == nullptr) {
+        throw runtime_error("Sensor real ainda nao foi configurado.");
+    }
+
+    vector<double> dados = sensorReal->getBuffer();
+
+    if (dados.empty()) {
+        throw runtime_error("O sensor real ainda nao possui amostras no buffer.");
+    }
+
+    ProcessadorDeSinais processador;
+    Resultado resultado;
+
+    resultado.media = processador.media(dados);
+    resultado.minimo = processador.minimo(dados);
+    resultado.maximo = processador.maximo(dados);
+    resultado.desvioPadrao = processador.desvioPadrao(dados);
+    resultado.razaoSinalRuido = processador.razaoSinalRuido(dados);
+    resultado.sinalOriginal = dados;
+    resultado.mediaMovel = processador.mediaMovel(dados, JANELA_PADRAO_MEDIA_MOVEL);
+    resultado.kalman = processador.filtroDeKalman(dados);
+
+    return resultado;
+}
+
 void SensorManager::limparTodos() {
     for (Sensor* sensor : sensores) {
         delete sensor;
     }
 
     sensores.clear();
+
+    if (sensorReal != nullptr) {
+        delete sensorReal;
+        sensorReal = nullptr;
+    }
+
     proximoEndereco = 0x001;
+    portaSerialRealAtual = "";
+    baudRateRealAtual = 0;
+    tamanhoBufferRealAtual = 0;
 }
 
 unsigned SensorManager::getQuantidadeSensores() const {

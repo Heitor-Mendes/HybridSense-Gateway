@@ -45,11 +45,11 @@ string TratadorDeRequisicoes::processar(const string& requisicaoJson) {
         }
 
         if (comando == "ler_dados_sensor_real") {
-            return respostaErro("Leitura de sensor real ainda nao implementada.");
+            return tratarLerDadosSensorReal(requisicaoJson);
         }
 
         if (comando == "processar_sinais_sensor_real") {
-            return respostaErro("Processamento de sensor real ainda nao implementado.");
+            return tratarProcessarSinaisSensorReal(requisicaoJson);
         }
 
         return respostaErro("Comando desconhecido.");
@@ -117,6 +117,52 @@ string TratadorDeRequisicoes::tratarProcessarSinaisSensorVirtual(const string& j
     Resultado resultado = sensorManager.processarSinais(endereco);
 
     string resposta = "{\"sucesso\":true,\"mensagem\":\"Processamento realizado com sucesso.\",";
+
+    resposta += "\"metricas\":{";
+    resposta += "\"media\":" + to_string(resultado.media) + ",";
+    resposta += "\"minimo\":" + to_string(resultado.minimo) + ",";
+    resposta += "\"maximo\":" + to_string(resultado.maximo) + ",";
+    resposta += "\"desvioPadrao\":" + to_string(resultado.desvioPadrao) + ",";
+    resposta += "\"razaoSinalRuido\":" + to_string(resultado.razaoSinalRuido);
+    resposta += "},";
+
+    resposta += "\"sinais\":{";
+    resposta += "\"sinalOriginal\":" + vetorParaJson(resultado.sinalOriginal) + ",";
+    resposta += "\"mediaMovel\":" + vetorParaJson(resultado.mediaMovel) + ",";
+    resposta += "\"kalman\":" + vetorParaJson(resultado.kalman);
+    resposta += "}";
+
+    resposta += "}";
+
+    return resposta;
+}
+
+string TratadorDeRequisicoes::tratarLerDadosSensorReal(const string& json) {
+    string portaSerial = extrairString(json, "portaSerial");
+    int baudRate = static_cast<int>(extrairUnsigned(json, "baudRate"));
+    unsigned tamanhoBuffer = extrairUnsigned(json, "tamanhoBuffer");
+
+    vector<double> sinal = sensorManager.lerSensorReal(portaSerial, baudRate, tamanhoBuffer);
+
+    string resposta = "{\"sucesso\":true,\"mensagem\":\"Leitura do sensor real realizada com sucesso.\",";
+    resposta += "\"portaSerial\":\"" + escaparJson(portaSerial) + "\",";
+    resposta += "\"baudRate\":" + to_string(baudRate) + ",";
+    resposta += "\"tamanhoBuffer\":" + to_string(tamanhoBuffer) + ",";
+    resposta += "\"sinal\":" + vetorParaJson(sinal);
+    resposta += "}";
+
+    return resposta;
+}
+
+string TratadorDeRequisicoes::tratarProcessarSinaisSensorReal(const string& json) {
+    string portaSerial = extrairString(json, "portaSerial");
+    int baudRate = static_cast<int>(extrairUnsigned(json, "baudRate"));
+    unsigned tamanhoBuffer = extrairUnsigned(json, "tamanhoBuffer");
+
+    sensorManager.lerSensorReal(portaSerial, baudRate, tamanhoBuffer);
+    Resultado resultado = sensorManager.processarSinaisSensorReal();
+
+    string resposta = "{\"sucesso\":true,\"mensagem\":\"Processamento do sensor real realizado com sucesso.\",";
 
     resposta += "\"metricas\":{";
     resposta += "\"media\":" + to_string(resultado.media) + ",";

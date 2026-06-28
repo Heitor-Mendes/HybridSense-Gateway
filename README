@@ -1,0 +1,1355 @@
+# HybridSense Gateway
+
+Sistema híbrido de aquisição, simulação e processamento de sinais desenvolvido em C++ e Python.
+
+O **HybridSense Gateway** é uma aplicação que integra sensores virtuais, leitura serial de um sensor físico emulado por ESP32, comunicação entre processos via socket TCP, API HTTP em Flask e interface gráfica em Python. O projeto foi desenvolvido como trabalho final da disciplina de Linguagens de Programação, com foco em orientação a objetos, modularidade, comunicação entre linguagens e processamento básico de sinais.
+
+---
+
+## 1. Visão geral
+
+O sistema permite:
+
+* Criar sensores virtuais com diferentes protocolos de comunicação.
+* Simular sinais de sensores virtuais.
+* Remover sensores virtuais cadastrados.
+* Processar sinais simulados usando filtros e métricas estatísticas.
+* Ler dados reais via porta serial a partir de um ESP32.
+* Configurar porta serial, baud rate e tamanho de buffer pela interface.
+* Plotar sinais em uma interface gráfica.
+* Exibir métricas de processamento em cards visuais.
+* Separar responsabilidades entre C++, API Flask e interface.
+
+A arquitetura foi pensada para simular um gateway de aquisição de dados, onde o backend em C++ concentra a lógica principal, enquanto Python atua como ponte de comunicação, API e interface visual.
+
+---
+
+## 2. Motivação
+
+Sistemas embarcados e aplicações industriais frequentemente precisam lidar com aquisição de dados, comunicação serial, tratamento de sinais e visualização gráfica. Normalmente, essas tarefas aparecem distribuídas entre diferentes camadas de software.
+
+A motivação do **HybridSense Gateway** é criar uma aplicação didática, mas próxima de um cenário real, onde:
+
+* O C++ representa o núcleo de processamento e controle.
+* O Python representa a camada de API e visualização.
+* O ESP32 representa um dispositivo físico externo enviando dados.
+* A comunicação entre os módulos acontece por protocolos bem definidos.
+* A interface facilita o uso sem exigir que o usuário interaja diretamente com o terminal.
+
+O projeto também demonstra conceitos importantes de programação, como:
+
+* Programação orientada a objetos.
+* Herança e polimorfismo.
+* Gerenciamento de memória com ponteiros.
+* Comunicação TCP.
+* Comunicação HTTP.
+* Leitura serial multiplataforma.
+* Separação em camadas.
+* Integração entre C++ e Python.
+* Processamento de sinais.
+
+---
+
+## 3. Arquitetura geral
+
+A aplicação é dividida em três grandes blocos:
+
+```txt
+Interface Python
+    ↓ HTTP
+API Flask
+    ↓ Socket TCP
+Servidor C++
+    ↓
+SensorManager
+    ↓
+Sensores Virtuais / Sensor Real
+    ↓
+ProcessadorDeSinais
+```
+
+### 3.1 Interface gráfica
+
+A interface é feita em Python com `customtkinter` e `matplotlib`.
+
+Ela é responsável por:
+
+* Exibir o menu lateral.
+* Receber entradas do usuário.
+* Chamar rotas HTTP da API.
+* Mostrar listas de sensores.
+* Plotar sinais.
+* Mostrar métricas de processamento.
+* Configurar leitura serial do ESP32.
+
+A interface **não se comunica diretamente com o C++**. Toda comunicação passa pela API Flask.
+
+---
+
+### 3.2 API Flask
+
+A API é feita em Python com Flask.
+
+Ela é responsável por:
+
+* Receber requisições HTTP da interface.
+* Controlar o fluxo da aplicação.
+* Repassar comandos ao servidor C++ via socket TCP.
+* Guardar tópicos internos de resposta.
+* Disponibilizar dados para a interface por rotas GET.
+
+A API funciona como intermediária entre a interface e o backend C++.
+
+---
+
+### 3.3 Servidor C++
+
+O C++ é o backend lógico do projeto.
+
+Ele é responsável por:
+
+* Criar sensores virtuais.
+* Remover sensores.
+* Simular sinais.
+* Ler dados seriais.
+* Fazer parse dos dados recebidos do ESP32.
+* Armazenar buffers de amostras.
+* Processar sinais.
+* Responder JSON para a API.
+
+O servidor C++ fica escutando conexões TCP na porta `8080`.
+
+---
+
+## 4. Fluxo de comunicação
+
+O fluxo principal funciona assim:
+
+```txt
+1. Usuário clica em uma opção na interface.
+2. Interface envia uma requisição HTTP para a API Flask.
+3. API converte a requisição em JSON para o C++.
+4. API abre uma conexão TCP com o servidor C++.
+5. C++ processa o comando.
+6. C++ responde JSON.
+7. API armazena ou repassa a resposta.
+8. Interface lê a resposta e atualiza a tela.
+```
+
+A comunicação entre API e C++ usa mensagens JSON terminadas com `\n`.
+
+Exemplo:
+
+```json
+{"comando":"listar_sensores_virtuais","dados":{}}
+```
+
+Resposta:
+
+```json
+{"sucesso":true,"mensagem":"Lista de sensores virtuais carregada.","sensores":[{"endereco":1,"nome":"Sensor UART"}]}
+```
+
+---
+
+## 5. Funcionalidades implementadas
+
+### 5.1 Sensores virtuais
+
+O usuário pode criar sensores virtuais informando:
+
+* Nome do sensor.
+* Protocolo de comunicação.
+* Tensão de operação.
+
+Protocolos disponíveis:
+
+```txt
+UART
+I2C
+SPI
+```
+
+Cada protocolo gera um comportamento de simulação diferente.
+
+---
+
+### 5.2 Simulação de sinais
+
+A simulação gera amostras de sinais com ruído e características diferentes dependendo do protocolo escolhido.
+
+O sinal gerado é armazenado em um buffer interno do sensor e pode ser plotado pela interface.
+
+---
+
+### 5.3 Remoção de sensores
+
+A interface lista os sensores virtuais cadastrados apenas com:
+
+```txt
+Nome
+Endereço
+```
+
+O usuário seleciona o sensor desejado e a API envia o endereço ao backend C++ para remoção.
+
+---
+
+### 5.4 Processamento de sinais virtuais
+
+O sistema processa o buffer de um sensor virtual e retorna:
+
+* Média.
+* Valor mínimo.
+* Valor máximo.
+* Desvio padrão.
+* Razão sinal-ruído.
+* Sinal original.
+* Sinal filtrado por média móvel.
+* Sinal filtrado por Kalman.
+
+A interface exibe as métricas em cards horizontais e plota os sinais no gráfico.
+
+---
+
+### 5.5 Leitura serial com ESP32
+
+O sensor físico é emulado por um ESP32 enviando dados pela serial.
+
+A interface permite configurar:
+
+* Porta serial.
+* Baud rate.
+* Tamanho do buffer.
+
+Opções de baud rate:
+
+```txt
+9600
+19200
+38400
+57600
+115200
+```
+
+Opções de buffer:
+
+```txt
+25
+50
+100
+```
+
+A escolha por caixas de seleção reduz erros de digitação e torna a interface mais segura para o usuário.
+
+---
+
+### 5.6 Processamento de sinais físicos
+
+Após a leitura serial, o buffer do sensor real pode ser processado usando o mesmo `ProcessadorDeSinais` usado nos sensores virtuais.
+
+Isso garante reaproveitamento da lógica e padronização das respostas.
+
+---
+
+## 6. Formato esperado dos dados do ESP32
+
+O ESP32 deve enviar linhas no seguinte formato:
+
+```txt
+HSENSE:2.543
+HSENSE:1.874
+HSENSE:3.102
+```
+
+O prefixo `HSENSE:` é usado pelo C++ para validar a linha recebida.
+
+Apenas linhas válidas são convertidas para `double` e adicionadas ao buffer do sensor real.
+
+---
+
+## 7. Código de teste para o ESP32
+
+```cpp
+#include <Arduino.h>
+
+const int BAUD_RATE = 115200;
+const int INTERVALO_MS = 10;
+
+void setup() {
+    Serial.begin(BAUD_RATE);
+    delay(1000);
+
+    randomSeed(esp_random());
+}
+
+void loop() {
+    float valor = random(500, 3300) / 1000.0;
+
+    Serial.print("HSENSE:");
+    Serial.println(valor, 3);
+
+    delay(INTERVALO_MS);
+}
+```
+
+Com `INTERVALO_MS = 10`:
+
+```txt
+25 amostras  -> aproximadamente 0,25 s
+50 amostras  -> aproximadamente 0,50 s
+100 amostras -> aproximadamente 1,00 s
+```
+
+Para testar a leitura serial pelo programa, o Serial Monitor da Arduino IDE deve estar fechado, pois ele ocupa a porta COM.
+
+---
+
+## 8. Estrutura de pastas
+
+Uma estrutura típica do projeto é:
+
+```txt
+HybridSense-Gateway/
+│
+├── sistema/
+│   ├── include/
+│   │   ├── sensor.h
+│   │   ├── sensor_virtual.h
+│   │   ├── sensor_real.h
+│   │   ├── sensor_manager.h
+│   │   ├── processamento_de_sinais.h
+│   │   ├── porta_serial.h
+│   │   ├── socket.h
+│   │   └── conversor.h
+│   │
+│   └── src/
+│       ├── main.cpp
+│       ├── sensor.cpp
+│       ├── sensor_virtual.cpp
+│       ├── sensor_real.cpp
+│       ├── sensor_manager.cpp
+│       ├── processamento_de_sinais.cpp
+│       ├── porta_serial.cpp
+│       ├── socket.cpp
+│       └── conversor.cpp
+│
+├── api/
+│   ├── main.py
+│   └── routes.py
+│
+├── interface/
+│   ├── interface.py
+│   ├── api_client.py
+│   └── Logo_Politecnica.png
+│
+├── obj/
+│   └── arquivos .o gerados na compilação
+│
+├── Makefile
+├── init.bat
+├── init.sh
+├── clean.bat
+├── clean.sh
+└── README.md
+```
+
+Dependendo da organização local, os arquivos Python podem estar na raiz do projeto. O importante é manter a separação lógica:
+
+```txt
+C++       -> sistema/
+API       -> api/
+Interface -> interface/
+```
+
+---
+
+## 9. Descrição dos principais arquivos
+
+### 9.1 `sensor.h`
+
+Define a classe abstrata `Sensor`.
+
+Essa classe representa a base comum para sensores virtuais e reais.
+
+Responsabilidades:
+
+* Guardar endereço do sensor.
+* Guardar nome.
+* Guardar tensão de operação.
+* Guardar protocolo.
+* Guardar tipo do sensor.
+* Manter buffer de amostras.
+* Definir métodos virtuais obrigatórios.
+
+Principais métodos:
+
+```cpp
+addAmostra(double)
+getBuffer()
+getUltimaAmostra()
+comecarAquisicao()
+getDescricao()
+```
+
+---
+
+### 9.2 `sensor_virtual.h` e `sensor_virtual.cpp`
+
+Implementam a classe `SensorVirtual`.
+
+Responsabilidades:
+
+* Herdar de `Sensor`.
+* Simular amostras.
+* Gerar sinais diferentes para UART, I2C e SPI.
+* Inserir ruído no sinal.
+* Quantizar valores quando necessário.
+* Armazenar amostras no buffer.
+
+Essa classe permite testar o sistema mesmo sem hardware físico.
+
+---
+
+### 9.3 `sensor_real.h` e `sensor_real.cpp`
+
+Implementam a classe `SensorReal`.
+
+Responsabilidades:
+
+* Herdar de `Sensor`.
+* Usar a classe `PortaSerial`.
+* Configurar porta serial e baud rate.
+* Ler linhas brutas da serial.
+* Validar linhas com prefixo `HSENSE:`.
+* Converter os valores recebidos para `double`.
+* Acumular amostras no buffer.
+
+O sensor real não é criado pela interface como os virtuais. Ele é controlado internamente pelo backend C++ a partir das configurações enviadas pela API.
+
+---
+
+### 9.4 `porta_serial.h` e `porta_serial.cpp`
+
+Implementam a classe `PortaSerial`.
+
+Responsabilidades:
+
+* Lidar com diferenças entre Windows e Linux.
+* Abrir porta serial.
+* Configurar baud rate.
+* Ler linhas brutas.
+* Fechar conexão serial.
+* Listar portas disponíveis.
+
+No Windows, utiliza a API Win32.
+
+No Linux, utiliza `termios`.
+
+Essa classe não sabe nada sobre sensores. Ela apenas cuida da comunicação serial bruta.
+
+---
+
+### 9.5 `sensor_manager.h` e `sensor_manager.cpp`
+
+Implementam a classe `SensorManager`.
+
+Responsabilidades:
+
+* Criar sensores virtuais.
+* Remover sensores virtuais.
+* Listar sensores.
+* Simular sensores virtuais.
+* Gerenciar o sensor real.
+* Ler dados do sensor real.
+* Chamar processamento de sinais.
+* Manter ponteiros dos sensores.
+* Liberar memória ao final.
+
+O `SensorManager` é o núcleo de controle dos sensores.
+
+---
+
+### 9.6 `processamento_de_sinais.h` e `processamento_de_sinais.cpp`
+
+Implementam a classe `ProcessadorDeSinais`.
+
+Responsabilidades:
+
+* Calcular média.
+* Calcular mínimo.
+* Calcular máximo.
+* Calcular desvio padrão.
+* Calcular razão sinal-ruído.
+* Aplicar média móvel.
+* Aplicar filtro de Kalman.
+
+Essa classe é reutilizada tanto para sinais virtuais quanto para sinais reais.
+
+---
+
+### 9.7 `socket.h` e `socket.cpp`
+
+Implementam o servidor TCP.
+
+Responsabilidades:
+
+* Abrir socket.
+* Escutar conexões.
+* Aceitar cliente.
+* Receber uma linha JSON.
+* Enviar resposta JSON.
+* Fechar cliente.
+
+A comunicação é half-duplex:
+
+```txt
+API conecta
+API envia JSON
+C++ responde JSON
+C++ fecha cliente
+```
+
+---
+
+### 9.8 `conversor.h` e `conversor.cpp`
+
+Implementam a classe `TratadorDeRequisicoes`.
+
+Responsabilidades:
+
+* Receber o JSON bruto vindo da API.
+* Extrair o comando.
+* Chamar o método correto do `SensorManager`.
+* Montar JSON de resposta.
+* Tratar erros.
+* Converter vetores em JSON.
+* Converter protocolos em enum.
+* Encaminhar comandos de sensores virtuais e reais.
+
+Essa classe funciona como uma ponte entre o socket TCP e a lógica do sistema.
+
+---
+
+### 9.9 `main.cpp`
+
+Arquivo principal do backend C++.
+
+Responsabilidades:
+
+* Criar o `SensorManager`.
+* Criar o `TratadorDeRequisicoes`.
+* Criar o servidor TCP.
+* Escutar requisições da API.
+* Enviar respostas para a API.
+
+Fluxo simplificado:
+
+```cpp
+SensorManager sensorManager;
+TratadorDeRequisicoes tratador(sensorManager);
+ServidorTCP servidor(8080);
+
+servidor.iniciar();
+
+while (true) {
+    socket_t cliente = servidor.aceitarCliente();
+    string requisicao = servidor.receberLinha(cliente);
+    string resposta = tratador.processar(requisicao);
+    servidor.enviarLinha(cliente, resposta);
+    servidor.fecharCliente(cliente);
+}
+```
+
+---
+
+### 9.10 `routes.py`
+
+Define as rotas da API Flask.
+
+Responsabilidades:
+
+* Receber comandos da interface.
+* Controlar fluxo de ações secundárias.
+* Enviar comandos ao C++ via socket.
+* Guardar tópicos internos.
+* Disponibilizar dados para a interface.
+
+Principais rotas:
+
+```txt
+POST /Sistema/Comandos
+GET  /Sistema/SensoresVirtuais/Lista
+POST /Sistema/SensoresVirtuais/Adicionar
+POST /Sistema/SensoresVirtuais/Remover
+POST /Sistema/SensoresVirtuais/Simulacao
+GET  /Sistema/SensoresVirtuais/Simulacao
+POST /Sistema/SensoresVirtuais/ProcessamentoDeSinais
+GET  /Sistema/SensoresVirtuais/ProcessamentoDeSinais
+POST /Sistema/SensorReal/Dados
+GET  /Sistema/SensorReal/Dados
+GET  /Sistema/SensorReal/ProcessamentoDeSinais
+```
+
+---
+
+### 9.11 `api_client.py`
+
+Arquivo auxiliar usado pela interface.
+
+Responsabilidades:
+
+* Centralizar chamadas HTTP.
+* Enviar comandos para a API.
+* Adicionar sensores.
+* Remover sensores.
+* Simular sensores.
+* Ler sensores reais.
+* Processar sinais.
+* Cancelar fluxo pendente.
+
+Ele evita que a interface tenha código HTTP espalhado pelas telas.
+
+---
+
+### 9.12 `interface.py`
+
+Implementa a interface gráfica.
+
+Responsabilidades:
+
+* Criar janela principal.
+* Criar menu lateral.
+* Criar telas de cada função.
+* Chamar funções do `api_client.py`.
+* Exibir listas de sensores.
+* Plotar sinais.
+* Exibir métricas.
+* Configurar leitura serial.
+* Mostrar logo da Politécnica.
+
+A interface foi construída com `customtkinter`.
+
+---
+
+## 10. Rotas da API
+
+### 10.1 Comandos gerais
+
+```txt
+POST /Sistema/Comandos
+```
+
+Exemplo:
+
+```json
+{
+  "comando": "abrir_simulacao_sensor_virtual"
+}
+```
+
+Essa rota controla o fluxo da interface. Ela libera a próxima rota secundária esperada.
+
+---
+
+### 10.2 Lista de sensores virtuais
+
+```txt
+GET /Sistema/SensoresVirtuais/Lista
+```
+
+Resposta:
+
+```json
+{
+  "sucesso": true,
+  "mensagem": "Lista de sensores virtuais carregada.",
+  "sensores": [
+    {
+      "endereco": 1,
+      "nome": "Sensor UART"
+    }
+  ]
+}
+```
+
+---
+
+### 10.3 Adicionar sensor virtual
+
+```txt
+POST /Sistema/SensoresVirtuais/Adicionar
+```
+
+Exemplo:
+
+```json
+{
+  "nome": "Sensor UART",
+  "tensao": 5.0,
+  "protocolo": "UART",
+  "tamanhoBuffer": 1000
+}
+```
+
+---
+
+### 10.4 Remover sensor virtual
+
+```txt
+POST /Sistema/SensoresVirtuais/Remover
+```
+
+Exemplo:
+
+```json
+{
+  "endereco": 1
+}
+```
+
+---
+
+### 10.5 Simular sensor virtual
+
+```txt
+POST /Sistema/SensoresVirtuais/Simulacao
+```
+
+Exemplo:
+
+```json
+{
+  "endereco": 1
+}
+```
+
+Leitura do resultado:
+
+```txt
+GET /Sistema/SensoresVirtuais/Simulacao
+```
+
+---
+
+### 10.6 Processar sensor virtual
+
+```txt
+POST /Sistema/SensoresVirtuais/ProcessamentoDeSinais
+```
+
+Exemplo:
+
+```json
+{
+  "endereco": 1
+}
+```
+
+Leitura do resultado:
+
+```txt
+GET /Sistema/SensoresVirtuais/ProcessamentoDeSinais
+```
+
+---
+
+### 10.7 Configurar e ler sensor real
+
+```txt
+POST /Sistema/SensorReal/Dados
+```
+
+Exemplo:
+
+```json
+{
+  "portaSerial": "COM3",
+  "baudRate": 115200,
+  "tamanhoBuffer": 50
+}
+```
+
+Depois de configurado, é possível ler novamente com:
+
+```txt
+GET /Sistema/SensorReal/Dados
+```
+
+---
+
+### 10.8 Processar sensor real
+
+```txt
+GET /Sistema/SensorReal/ProcessamentoDeSinais
+```
+
+Essa rota processa o buffer atual do sensor real.
+
+---
+
+## 11. Dependências
+
+### 11.1 C++
+
+Necessário:
+
+```txt
+g++
+make ou mingw32-make
+```
+
+No Windows, é necessário MinGW ou MSYS2 com suporte a `g++`.
+
+O projeto usa a biblioteca Winsock no Windows, linkada com:
+
+```txt
+-lws2_32
+```
+
+---
+
+### 11.2 Python
+
+Instale as dependências:
+
+```bash
+pip install flask requests customtkinter pillow matplotlib
+```
+
+Dependências principais:
+
+```txt
+Flask        -> API HTTP
+requests     -> chamadas HTTP da interface
+customtkinter -> interface gráfica
+Pillow       -> carregamento da logo
+matplotlib   -> gráficos
+```
+
+---
+
+## 12. Como compilar e executar
+
+O projeto possui scripts de inicialização para Windows e Linux.
+
+A ordem correta de execução é:
+
+```txt
+1. Compilar o C++
+2. Iniciar o servidor C++
+3. Iniciar a API Flask
+4. Iniciar a interface gráfica
+```
+
+Os scripts `init.bat` e `init.sh` automatizam esse processo.
+
+---
+
+## 13. Inicialização no Windows
+
+Execute:
+
+```powershell
+./init.bat
+```
+
+ou, se estiver usando um script chamado apenas `init`:
+
+```powershell
+./init
+```
+
+O script deve:
+
+```txt
+1. Compilar o código C++
+2. Gerar programa.exe
+3. Iniciar programa.exe
+4. Iniciar a API Flask
+5. Iniciar a interface Python
+```
+
+Exemplo esperado:
+
+```txt
+===========================================
+1. Compilando o codigo C++...
+===========================================
+
+===========================================
+2. Iniciando o programa C++ (programa.exe)...
+===========================================
+
+===========================================
+3. Iniciando os servicos em Python...
+===========================================
+
+===========================================
+Todos os processos foram iniciados!
+===========================================
+```
+
+---
+
+## 14. Inicialização no Linux
+
+Dê permissão de execução:
+
+```bash
+chmod +x init.sh
+```
+
+Execute:
+
+```bash
+./init.sh
+```
+
+O script deve compilar e iniciar os serviços da mesma forma que no Windows.
+
+Em alguns sistemas Linux, pode ser necessário dar permissão de acesso à porta serial:
+
+```bash
+sudo usermod -a -G dialout $USER
+```
+
+Depois disso, faça logout/login ou reinicie a sessão.
+
+---
+
+## 15. Limpeza do projeto
+
+O projeto gera arquivos intermediários de compilação dentro da pasta:
+
+```txt
+obj/
+```
+
+E gera o executável:
+
+```txt
+programa.exe
+```
+
+No Linux, o executável pode ser:
+
+```txt
+programa
+```
+
+Para limpar os arquivos gerados, utilize os scripts `clean`.
+
+---
+
+## 16. Limpeza no Windows
+
+Execute:
+
+```powershell
+./clean.bat
+```
+
+Esse script remove:
+
+```txt
+obj/
+programa.exe
+```
+
+Exemplo de `clean.bat`:
+
+```bat
+@echo off
+
+echo ===========================================
+echo Limpando arquivos gerados...
+echo ===========================================
+
+if exist obj (
+    rmdir /s /q obj
+    echo Pasta obj removida.
+)
+
+if exist programa.exe (
+    del /q programa.exe
+    echo programa.exe removido.
+)
+
+echo.
+echo Limpeza concluida.
+pause
+```
+
+---
+
+## 17. Limpeza no Linux
+
+Dê permissão:
+
+```bash
+chmod +x clean.sh
+```
+
+Execute:
+
+```bash
+./clean.sh
+```
+
+Exemplo de `clean.sh`:
+
+```bash
+#!/bin/bash
+
+echo "==========================================="
+echo "Limpando arquivos gerados..."
+echo "==========================================="
+
+if [ -d "obj" ]; then
+    rm -rf obj
+    echo "Pasta obj removida."
+fi
+
+if [ -f "programa.exe" ]; then
+    rm -f programa.exe
+    echo "programa.exe removido."
+fi
+
+if [ -f "programa" ]; then
+    rm -f programa
+    echo "programa removido."
+fi
+
+echo
+echo "Limpeza concluida."
+```
+
+---
+
+## 18. Makefile
+
+O projeto usa um `Makefile` para compilar automaticamente todos os arquivos `.cpp` dentro de `sistema/src`.
+
+Exemplo de Makefile para Windows com MinGW:
+
+```makefile
+TARGET = programa.exe
+
+SRC_DIR = sistema/src
+INC_DIR = sistema/include
+OBJ_DIR = obj
+
+CXX = g++
+CXXFLAGS = -Wall -Wextra -std=c++11 -I$(INC_DIR)
+LDFLAGS = -lws2_32
+
+SRCS = $(wildcard $(SRC_DIR)/*.cpp)
+OBJS = $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(SRCS))
+
+all: $(TARGET)
+
+$(TARGET): $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@if not exist $(OBJ_DIR) mkdir $(OBJ_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+clean:
+	@if exist $(OBJ_DIR) rmdir /s /q $(OBJ_DIR)
+	@if exist $(TARGET) del /q $(TARGET)
+
+.PHONY: all clean
+```
+
+O ponto mais importante no Windows é manter:
+
+```makefile
+-lws2_32
+```
+
+ao final da etapa de linkedição.
+
+---
+
+## 19. Tratamento de erros comuns
+
+### 19.1 Erro de conexão com a API
+
+Mensagem comum:
+
+```txt
+HTTPConnectionPool max retries exceeded
+```
+
+Possível causa:
+
+```txt
+A interface foi aberta antes da API Flask.
+```
+
+Solução:
+
+```txt
+1. Abra o servidor C++
+2. Abra a API Flask
+3. Abra a interface
+```
+
+---
+
+### 19.2 Erro de conexão com o C++
+
+Mensagem comum:
+
+```txt
+Nao foi possivel conectar ao servidor C++.
+```
+
+Possível causa:
+
+```txt
+A API Flask está rodando, mas o programa.exe não está escutando na porta 8080.
+```
+
+Solução:
+
+```txt
+Execute o programa C++ antes da API ou reinicie todos os serviços com init.
+```
+
+---
+
+### 19.3 Porta serial não abre
+
+Possíveis causas:
+
+```txt
+Serial Monitor da Arduino IDE está aberto.
+Porta COM errada.
+Baud rate errado.
+ESP32 desconectado.
+Driver USB não instalado.
+```
+
+Solução:
+
+```txt
+Feche o Serial Monitor.
+Confirme a COM correta.
+Use baud rate 115200.
+Reconecte o ESP32.
+```
+
+---
+
+### 19.4 Nenhuma amostra válida recebida
+
+Possível causa:
+
+```txt
+O ESP32 não está enviando no formato esperado.
+```
+
+Formato correto:
+
+```txt
+HSENSE:2.543
+```
+
+Formato incorreto:
+
+```txt
+2.543
+valor:2.543
+sensor=2.543
+```
+
+---
+
+### 19.5 Warning do Windows no `porta_serial.cpp`
+
+Warnings como:
+
+```txt
+missing initializer for member '_DCB::...'
+```
+
+podem aparecer se a struct `DCB` for inicializada com `{0}`.
+
+Solução:
+
+```cpp
+DCB dcbSerialParams;
+ZeroMemory(&dcbSerialParams, sizeof(dcbSerialParams));
+```
+
+E para timeouts:
+
+```cpp
+COMMTIMEOUTS timeouts;
+ZeroMemory(&timeouts, sizeof(timeouts));
+```
+
+---
+
+## 20. Padrões de resposta JSON
+
+### 20.1 Lista de sensores
+
+```json
+{
+  "sucesso": true,
+  "mensagem": "Lista de sensores virtuais carregada.",
+  "sensores": [
+    {
+      "endereco": 1,
+      "nome": "Sensor UART"
+    }
+  ]
+}
+```
+
+---
+
+### 20.2 Sinal simulado
+
+```json
+{
+  "sucesso": true,
+  "mensagem": "Simulacao realizada com sucesso.",
+  "endereco": 1,
+  "sinal": [2.51, 2.63, 2.72]
+}
+```
+
+---
+
+### 20.3 Leitura serial
+
+```json
+{
+  "sucesso": true,
+  "mensagem": "Leitura do sensor real realizada com sucesso.",
+  "portaSerial": "COM3",
+  "baudRate": 115200,
+  "tamanhoBuffer": 50,
+  "sinal": [2.51, 2.63, 2.72]
+}
+```
+
+---
+
+### 20.4 Processamento
+
+```json
+{
+  "sucesso": true,
+  "mensagem": "Processamento realizado com sucesso.",
+  "metricas": {
+    "media": 2.75,
+    "minimo": 1.93,
+    "maximo": 3.41,
+    "desvioPadrao": 0.22,
+    "razaoSinalRuido": 12.5
+  },
+  "sinais": {
+    "sinalOriginal": [2.51, 2.63, 2.72],
+    "mediaMovel": [2.51, 2.57, 2.62],
+    "kalman": [2.51, 2.56, 2.61]
+  }
+}
+```
+
+---
+
+## 21. Conceitos de programação aplicados
+
+O projeto utiliza:
+
+* Classes abstratas.
+* Herança.
+* Polimorfismo.
+* Ponteiros.
+* Alocação dinâmica.
+* Encapsulamento.
+* Separação em camadas.
+* Comunicação por socket TCP.
+* API HTTP.
+* Serial multiplataforma.
+* Processamento de vetores.
+* Tratamento de exceções.
+* Organização modular de arquivos.
+
+---
+
+## 22. Limitações atuais
+
+Algumas limitações conhecidas:
+
+* O parser JSON em C++ é simples e depende do formato controlado enviado pela API.
+* O sensor real suporta apenas um dispositivo por vez.
+* O backend C++ atende uma conexão TCP por vez.
+* A leitura serial é feita sob demanda, não em thread contínua.
+* A interface ainda não está empacotada como aplicativo instalável.
+* O sistema ainda não possui persistência em banco de dados.
+* A API usa variáveis globais para armazenar tópicos internos.
+
+Essas limitações são aceitáveis para o escopo acadêmico do projeto, mas podem ser melhoradas em versões futuras.
+
+---
+
+## 23. Próximos passos
+
+O próximo grande passo é transformar o projeto em um aplicativo mais robusto.
+
+Possíveis melhorias:
+
+* Empacotar a interface como executável.
+* Criar instalador para Windows.
+* Rodar API e C++ automaticamente em segundo plano.
+* Criar ícone e splash screen.
+* Melhorar o parser JSON no C++ usando uma biblioteca dedicada.
+* Adicionar leitura serial contínua com threads.
+* Salvar dados em CSV ou banco de dados.
+* Exportar gráficos.
+* Adicionar múltiplos sensores reais.
+* Criar dashboard em tempo real.
+* Implementar logs.
+* Adicionar detecção automática de ESP32.
+* Criar configuração persistente da última COM usada.
+* Transformar a API em serviço local.
+* Criar versão multiplataforma empacotada.
+
+---
+
+## 24. Possível evolução para aplicativo
+
+A evolução natural do HybridSense Gateway é transformá-lo em um aplicativo desktop completo.
+
+Uma arquitetura futura poderia ser:
+
+```txt
+Aplicativo Desktop
+    ├── Interface gráfica
+    ├── API local embutida
+    ├── Backend C++ executado em segundo plano
+    ├── Gerenciador de sensores
+    ├── Módulo serial contínuo
+    └── Exportação de dados
+```
+
+O objetivo seria permitir que o usuário abrisse apenas um executável, sem precisar iniciar manualmente C++, API e interface separadamente.
+
+---
+
+## 25. Conclusão
+
+O **HybridSense Gateway** demonstra uma arquitetura híbrida entre C++ e Python para aquisição, simulação e processamento de sinais.
+
+O C++ concentra a lógica principal, o gerenciamento dos sensores e o processamento dos dados. O Python atua como API e interface gráfica, tornando o sistema mais acessível para o usuário final. O ESP32 adiciona uma camada física ao projeto, permitindo testar leitura serial real com dados emulados.
+
+O resultado é uma aplicação modular, expansível e adequada para demonstrar conceitos de programação orientada a objetos, comunicação entre processos, integração com hardware e visualização de sinais.
+
+O projeto está pronto para evoluir para uma versão empacotada como aplicativo desktop.

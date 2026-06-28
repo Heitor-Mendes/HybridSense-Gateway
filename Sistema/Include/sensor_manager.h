@@ -3,6 +3,7 @@
 
 #include "sensor.h"
 #include "sensor_virtual.h"
+#include "sensor_real.h"
 #include "processamento_de_sinais.h"
 
 #include <vector>
@@ -46,12 +47,21 @@ class SensorManager {
 
         Resultado processarSinais(unsigned endereco);
 
+        vector<double> lerSensorReal(string portaSerial, int baudRate, unsigned tamanhoBuffer);
+        Resultado processarSinaisSensorReal();
+
         void limparTodos();
         unsigned getQuantidadeSensores() const;
 
     private:
         vector<Sensor*> sensores;
+        SensorReal* sensorReal;
+
         unsigned proximoEndereco;
+
+        string portaSerialRealAtual;
+        int baudRateRealAtual;
+        unsigned tamanhoBufferRealAtual;
 
         static const unsigned AMOSTRAS_PADRAO_SIMULACAO = 100;
         static const unsigned JANELA_PADRAO_MEDIA_MOVEL = 5;
