@@ -12,19 +12,7 @@ string TratadorDeRequisicoes::processar(const string& requisicaoJson) {
     try {
         string comando = extrairString(requisicaoJson, "comando");
 
-        if (comando == "listar_sensores_virtuais") {
-            return tratarListarSensoresVirtuais();
-        }
-
-        if (comando == "abrir_remocao_sensor_virtual") {
-            return tratarListarSensoresVirtuais();
-        }
-
-        if (comando == "abrir_simulacao_sensor_virtual") {
-            return tratarListarSensoresVirtuais();
-        }
-
-        if (comando == "abrir_processamento_sensor_virtual") {
+        if (comando == "listar_sensores_virtuais" || comando == "abrir_remocao_sensor_virtual" || comando == "abrir_simulacao_sensor_virtual" || comando == "abrir_processamento_sensor_virtual") {
             return tratarListarSensoresVirtuais();
         }
 
@@ -62,13 +50,13 @@ string TratadorDeRequisicoes::tratarListarSensoresVirtuais() {
     vector<DadosSensor> sensores = sensorManager.listarSensoresVirtuais();
     string json = "{\"sucesso\":true,\"mensagem\":\"Lista de sensores virtuais carregada.\",\"sensores\":[";
 
-    for (unsigned i = 0; i < sensores.size(); i++) {
+    for (unsigned indice = 0; indice < sensores.size(); indice++) {
         json += "{";
-        json += "\"endereco\":" + to_string(sensores[i].endereco) + ",";
-        json += "\"nome\":\"" + escaparJson(sensores[i].nome) + "\"";
+        json += "\"endereco\":" + to_string(sensores[indice].endereco) + ",";
+        json += "\"nome\":\"" + escaparJson(sensores[indice].nome) + "\"";
         json += "}";
 
-        if (i + 1 < sensores.size()) {
+        if (indice + 1 < sensores.size()) {
             json += ",";
         }
     }
@@ -190,19 +178,19 @@ bool TratadorDeRequisicoes::contemChave(const string& json, const string& chave)
 
 string TratadorDeRequisicoes::extrairString(const string& json, const string& chave) const {
     string alvo = "\"" + chave + "\"";
-    size_t posChave = json.find(alvo);
+    unsigned posChave = json.find(alvo);
 
     if (posChave == string::npos) {
         throw invalid_argument("Campo obrigatorio ausente: " + chave);
     }
 
-    size_t posDoisPontos = json.find(":", posChave);
+    unsigned posDoisPontos = json.find(":", posChave);
 
     if (posDoisPontos == string::npos) {
         throw invalid_argument("Formato invalido para campo: " + chave);
     }
 
-    size_t inicio = json.find("\"", posDoisPontos + 1);
+    unsigned inicio = json.find("\"", posDoisPontos + 1);
 
     if (inicio == string::npos) {
         throw invalid_argument("Campo string invalido: " + chave);
@@ -211,18 +199,18 @@ string TratadorDeRequisicoes::extrairString(const string& json, const string& ch
     inicio++;
     string valor;
 
-    for (size_t i = inicio; i < json.size(); i++) {
-        if (json[i] == '\\' && i + 1 < json.size()) {
-            valor += json[i + 1];
-            i++;
+    for (unsigned indice = inicio; indice < json.size(); indice++) {
+        if (json[indice] == '\\' && indice + 1 < json.size()) {
+            valor += json[indice + 1];
+            indice++;
             continue;
         }
 
-        if (json[i] == '"') {
+        if (json[indice] == '"') {
             return valor;
         }
 
-        valor += json[i];
+        valor += json[indice];
     }
 
     throw invalid_argument("Campo string nao finalizado: " + chave);
@@ -230,25 +218,25 @@ string TratadorDeRequisicoes::extrairString(const string& json, const string& ch
 
 double TratadorDeRequisicoes::extrairDouble(const string& json, const string& chave) const {
     string alvo = "\"" + chave + "\"";
-    size_t posChave = json.find(alvo);
+    unsigned posChave = json.find(alvo);
 
     if (posChave == string::npos) {
         throw invalid_argument("Campo obrigatorio ausente: " + chave);
     }
 
-    size_t posDoisPontos = json.find(":", posChave);
+    unsigned posDoisPontos = json.find(":", posChave);
 
     if (posDoisPontos == string::npos) {
         throw invalid_argument("Formato invalido para campo: " + chave);
     }
 
-    size_t inicio = posDoisPontos + 1;
+    unsigned inicio = posDoisPontos + 1;
 
     while (inicio < json.size() && isspace(static_cast<unsigned char>(json[inicio]))) {
         inicio++;
     }
 
-    size_t fim = inicio;
+    unsigned fim = inicio;
 
     while (fim < json.size() && json[fim] != ',' && json[fim] != '}') {
         fim++;
@@ -260,25 +248,25 @@ double TratadorDeRequisicoes::extrairDouble(const string& json, const string& ch
 
 unsigned TratadorDeRequisicoes::extrairUnsigned(const string& json, const string& chave) const {
     string alvo = "\"" + chave + "\"";
-    size_t posChave = json.find(alvo);
+    unsigned posChave = json.find(alvo);
 
     if (posChave == string::npos) {
         throw invalid_argument("Campo obrigatorio ausente: " + chave);
     }
 
-    size_t posDoisPontos = json.find(":", posChave);
+    unsigned posDoisPontos = json.find(":", posChave);
 
     if (posDoisPontos == string::npos) {
         throw invalid_argument("Formato invalido para campo: " + chave);
     }
 
-    size_t inicio = posDoisPontos + 1;
+    unsigned inicio = posDoisPontos + 1;
 
     while (inicio < json.size() && isspace(static_cast<unsigned char>(json[inicio]))) {
         inicio++;
     }
 
-    size_t fim = inicio;
+    unsigned fim = inicio;
 
     while (fim < json.size() && json[fim] != ',' && json[fim] != '}') {
         fim++;
@@ -289,8 +277,8 @@ unsigned TratadorDeRequisicoes::extrairUnsigned(const string& json, const string
 }
 
 ProtocoloSerial TratadorDeRequisicoes::converterProtocolo(const string& protocolo) const {
-    string texto = protocolo;
-
+    string texto = protocolo;   
+    
     transform(texto.begin(), texto.end(), texto.begin(), [](unsigned char c) {
         return static_cast<char>(toupper(c));
     });
@@ -333,10 +321,10 @@ string TratadorDeRequisicoes::escaparJson(const string& texto) const {
 string TratadorDeRequisicoes::vetorParaJson(const vector<double>& vetor) const {
     string json = "[";
 
-    for (unsigned i = 0; i < vetor.size(); i++) {
-        json += to_string(vetor[i]);
+    for (unsigned indice = 0; indice < vetor.size(); indice++) {
+        json += to_string(vetor[indice]);
 
-        if (i + 1 < vetor.size()) {
+        if (indice + 1 < vetor.size()) {
             json += ",";
         }
     }

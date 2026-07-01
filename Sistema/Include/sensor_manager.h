@@ -63,6 +63,7 @@ class SensorManager {
         int baudRateRealAtual;
         unsigned tamanhoBufferRealAtual;
 
+        // Ponto de personalizacao futuramente
         static const unsigned AMOSTRAS_PADRAO_SIMULACAO = 100;
         static const unsigned JANELA_PADRAO_MEDIA_MOVEL = 5;
 
