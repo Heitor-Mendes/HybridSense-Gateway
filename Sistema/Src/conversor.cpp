@@ -12,7 +12,7 @@ string TratadorDeRequisicoes::processar(const string& requisicaoJson) {
     try {
         string comando = extrairString(requisicaoJson, "comando");
 
-        if (comando == "listar_sensores_virtuais" || comando == "abrir_remocao_sensor_virtual" || comando == "abrir_simulacao_sensor_virtual" || comando == "abrir_processamento_sensor_virtual") {
+        if (comando == "listar_sensores_virtuais") {
             return tratarListarSensoresVirtuais();
         }
 
@@ -171,28 +171,24 @@ string TratadorDeRequisicoes::tratarProcessarSinaisSensorReal(const string& json
     return resposta;
 }
 
-bool TratadorDeRequisicoes::contemChave(const string& json, const string& chave) const {
-    string alvo = "\"" + chave + "\"";
-    return json.find(alvo) != string::npos;
-}
-
 string TratadorDeRequisicoes::extrairString(const string& json, const string& chave) const {
+    const unsigned npos = static_cast<unsigned>(string::npos);
     string alvo = "\"" + chave + "\"";
-    unsigned posChave = json.find(alvo);
+    unsigned posChave = static_cast<unsigned>(json.find(alvo));
 
-    if (posChave == string::npos) {
+    if (posChave == npos) {
         throw invalid_argument("Campo obrigatorio ausente: " + chave);
     }
 
-    unsigned posDoisPontos = json.find(":", posChave);
+    unsigned posDoisPontos = static_cast<unsigned>(json.find(":", posChave));
 
-    if (posDoisPontos == string::npos) {
+    if (posDoisPontos == npos) {
         throw invalid_argument("Formato invalido para campo: " + chave);
     }
 
-    unsigned inicio = json.find("\"", posDoisPontos + 1);
+    unsigned inicio = static_cast<unsigned>(json.find("\"", posDoisPontos + 1));
 
-    if (inicio == string::npos) {
+    if (inicio == npos) {
         throw invalid_argument("Campo string invalido: " + chave);
     }
 
@@ -217,16 +213,17 @@ string TratadorDeRequisicoes::extrairString(const string& json, const string& ch
 }
 
 double TratadorDeRequisicoes::extrairDouble(const string& json, const string& chave) const {
+    const unsigned npos = static_cast<unsigned>(string::npos);
     string alvo = "\"" + chave + "\"";
-    unsigned posChave = json.find(alvo);
+    unsigned posChave = static_cast<unsigned>(json.find(alvo));
 
-    if (posChave == string::npos) {
+    if (posChave == npos) {
         throw invalid_argument("Campo obrigatorio ausente: " + chave);
     }
 
-    unsigned posDoisPontos = json.find(":", posChave);
+    unsigned posDoisPontos = static_cast<unsigned>(json.find(":", posChave));
 
-    if (posDoisPontos == string::npos) {
+    if (posDoisPontos == npos) {
         throw invalid_argument("Formato invalido para campo: " + chave);
     }
 
@@ -247,16 +244,17 @@ double TratadorDeRequisicoes::extrairDouble(const string& json, const string& ch
 }
 
 unsigned TratadorDeRequisicoes::extrairUnsigned(const string& json, const string& chave) const {
+    const unsigned npos = static_cast<unsigned>(string::npos);
     string alvo = "\"" + chave + "\"";
-    unsigned posChave = json.find(alvo);
+    unsigned posChave = static_cast<unsigned>(json.find(alvo));
 
-    if (posChave == string::npos) {
+    if (posChave == npos) {
         throw invalid_argument("Campo obrigatorio ausente: " + chave);
     }
 
-    unsigned posDoisPontos = json.find(":", posChave);
+    unsigned posDoisPontos = static_cast<unsigned>(json.find(":", posChave));
 
-    if (posDoisPontos == string::npos) {
+    if (posDoisPontos == npos) {
         throw invalid_argument("Formato invalido para campo: " + chave);
     }
 

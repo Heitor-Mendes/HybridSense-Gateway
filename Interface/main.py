@@ -247,7 +247,7 @@ class Aplicativo(ctk.CTk):
         label_porta = ctk.CTkLabel(frame_form, text="Porta serial", font=ctk.CTkFont(size=18), anchor="w")
         label_porta.grid(row=1, column=0, padx=35, pady=(14, 0), sticky="ew")
 
-        portas = ["COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM10", "COM11", "COM12", "COM13", "COM14", "COM15", "COM16", "COM17", "COM18", "COM19", "COM20", "/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyACM0", "/dev/ttyACM1"]
+        portas = ["COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM10", "COM11", "COM12", "COM13", "COM14", "COM15", "COM16", "COM17", "COM18", "COM19", "COM20"]
         self.sensor_real_porta = ctk.CTkOptionMenu(frame_form, values=portas, width=420, height=50, font=ctk.CTkFont(size=22))
         self.sensor_real_porta.set(self.porta_serial_real if self.porta_serial_real else "COM3")
         self.sensor_real_porta.grid(row=2, column=0, padx=30, pady=8, sticky="ew")

@@ -22,9 +22,7 @@ class SensorVirtual : public Sensor {
         SensorVirtual(unsigned endereco, unsigned tamanhoBuffer, string nome, float tensaoDeOperacao, ProtocoloSerial protocolo);
         virtual ~SensorVirtual();
 
-        void comecarAquisicao() override;
-        string getDescricao() const override;
-        void simularAmostras(unsigned quantidade);
+        virtual void comecarAquisicao(unsigned quantidade);
 
     private:
         double tempo;
@@ -34,6 +32,7 @@ class SensorVirtual : public Sensor {
 
         ConfiguracaoSimulacao getConfiguracao() const;
 
+        void simularAmostras(unsigned quantidade);
         double gerarAmostra();
         double gerarSinalAnalogico(const ConfiguracaoSimulacao& config);
         double quantizarSinal(double sinal, const ConfiguracaoSimulacao& config);

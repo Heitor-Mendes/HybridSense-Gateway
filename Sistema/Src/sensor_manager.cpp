@@ -51,22 +51,8 @@ DadosSensor SensorManager::montarDadosSensor(const Sensor* sensor) const {
 
     dados.endereco = sensor->getEndereco();
     dados.nome = sensor->getNome();
-    dados.tensaoDeOperacao = sensor->getTensaoDeOperacao();
-    dados.protocolo = sensor->protocoloToString(sensor->getProtocolo());
-    dados.tipo = sensor->tipoToString(sensor->getTipoSensor());
-    dados.quantidadeAmostras = sensor->getBuffer().size();
 
     return dados;
-}
-
-vector<DadosSensor> SensorManager::listarSensores() const {
-    vector<DadosSensor> lista;
-
-    for (Sensor* sensor : sensores) {
-        lista.push_back(montarDadosSensor(sensor));
-    }
-
-    return lista;
 }
 
 vector<DadosSensor> SensorManager::listarSensoresVirtuais() const {
@@ -92,15 +78,9 @@ vector<double> SensorManager::simularSensorVirtual(unsigned endereco) {
         throw runtime_error("O sensor informado nao e virtual.");
     }
 
-    SensorVirtual* sensorVirtual = dynamic_cast<SensorVirtual*>(sensor);
+    sensor->comecarAquisicao(0); // 0 indica que o sensor virtual deve usar a quantidade padrao de amostras
 
-    if (sensorVirtual == nullptr) {
-        throw runtime_error("Falha ao converter Sensor para SensorVirtual.");
-    }
-
-    sensorVirtual->simularAmostras(AMOSTRAS_PADRAO_SIMULACAO);
-
-    return sensorVirtual->getBuffer();
+    return sensor->getBuffer();
 }
 
 vector<double> SensorManager::getBufferSensor(unsigned endereco) const {
@@ -129,7 +109,7 @@ Resultado SensorManager::processarSinais(unsigned endereco) {
     resultado.desvioPadrao = processador.desvioPadrao(dados);
     resultado.razaoSinalRuido = processador.razaoSinalRuido(dados);
     resultado.sinalOriginal = dados;
-    resultado.mediaMovel = processador.mediaMovel(dados, JANELA_PADRAO_MEDIA_MOVEL);
+    resultado.mediaMovel = processador.mediaMovel(dados, 0);
     resultado.kalman = processador.filtroDeKalman(dados);
 
     return resultado;
@@ -171,8 +151,9 @@ vector<double> SensorManager::lerSensorReal(string portaSerial, int baudRate, un
     }
 
     sensorReal->configurar(portaSerial, baudRate);
+    sensorReal->comecarAquisicao(tamanhoBuffer);
 
-    return sensorReal->lerAmostras(tamanhoBuffer);
+    return sensorReal->getBuffer();
 }
 
 Resultado SensorManager::processarSinaisSensorReal() {
@@ -195,7 +176,7 @@ Resultado SensorManager::processarSinaisSensorReal() {
     resultado.desvioPadrao = processador.desvioPadrao(dados);
     resultado.razaoSinalRuido = processador.razaoSinalRuido(dados);
     resultado.sinalOriginal = dados;
-    resultado.mediaMovel = processador.mediaMovel(dados, JANELA_PADRAO_MEDIA_MOVEL);
+    resultado.mediaMovel = processador.mediaMovel(dados, 0);
     resultado.kalman = processador.filtroDeKalman(dados);
 
     return resultado;
@@ -219,6 +200,3 @@ void SensorManager::limparTodos() {
     tamanhoBufferRealAtual = 0;
 }
 
-unsigned SensorManager::getQuantidadeSensores() const {
-    return sensores.size();
-}

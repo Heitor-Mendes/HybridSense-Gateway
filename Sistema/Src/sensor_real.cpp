@@ -1,7 +1,6 @@
 #include "sensor_real.h"
 
 #include <stdexcept>
-#include <sstream>
 
 SensorReal::SensorReal(unsigned endereco, unsigned tamanhoBuffer, string nome, float tensaoDeOperacao) : Sensor(endereco, tamanhoBuffer, nome, tensaoDeOperacao, ProtocoloSerial::UART, TipoSensor::Real) {
     portaConfigurada = "";
@@ -29,8 +28,8 @@ void SensorReal::configurar(string portaSerialTexto, int baudRate) {
     configurado = true;
 }
 
-void SensorReal::comecarAquisicao() {
-    lerAmostras(tamanhoBuffer);
+void SensorReal::comecarAquisicao(unsigned quantidade) {
+    lerAmostras(quantidade);
 }
 
 vector<double> SensorReal::lerAmostras(unsigned quantidade) {
@@ -76,18 +75,3 @@ double SensorReal::parseLinha(const string& linha) const {
     return stod(valorTexto);
 }
 
-string SensorReal::getDescricao() const {
-    stringstream ss;
-
-    ss << "Sensor Real"
-       << " | Endereco: " << endereco
-       << " | Nome: " << nome
-       << " | Tensao: " << tensaoDeOperacao << " V"
-       << " | Protocolo: UART"
-       << " | Porta: " << portaConfigurada
-       << " | BaudRate: " << baudRateConfigurado
-       << " | Amostras no buffer: " << buffer.size()
-       << " | Tamanho maximo do buffer: " << tamanhoBuffer;
-
-    return ss.str();
-}

@@ -14,11 +14,9 @@ class SensorReal : public Sensor {
         SensorReal(unsigned endereco, unsigned tamanhoBuffer, string nome, float tensaoDeOperacao);
         virtual ~SensorReal();
 
-        void comecarAquisicao() override;
-        string getDescricao() const override;
+        virtual void comecarAquisicao(unsigned quantidade);
 
         void configurar(string portaSerial, int baudRate);
-        vector<double> lerAmostras(unsigned quantidade);
 
     private:
         PortaSerial portaSerial;
@@ -28,6 +26,7 @@ class SensorReal : public Sensor {
 
         bool linhaValida(const string& linha) const;
         double parseLinha(const string& linha) const;
+        vector<double> lerAmostras(unsigned quantidade);
 };
 
 #endif

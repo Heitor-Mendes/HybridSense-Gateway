@@ -2,15 +2,9 @@
 #define PORTA_SERIAL_H
 
 #include <string>
-#include <vector>
+#include <windows.h>
 
 using namespace std;
-
-#ifdef _WIN32
-    #include <windows.h>
-#else
-    #include <termios.h>
-#endif
 
 class PortaSerial {
     public:
@@ -24,17 +18,10 @@ class PortaSerial {
         string lerLinha();
         string getNomePorta() const;
 
-        static vector<string> listarPortasDisponiveis();
-
     private:
         string nomePorta;
         bool aberta;
-
-#ifdef _WIN32
         HANDLE handle;
-#else
-        int fd;
-#endif
 
         bool configurarPorta(int baudRate);
 };

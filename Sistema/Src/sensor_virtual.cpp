@@ -1,7 +1,6 @@
 #include "../Include/sensor_virtual.h"
 
 #include <cmath>
-#include <sstream>
 #include <stdexcept>
 
 SensorVirtual::SensorVirtual(unsigned endereco, unsigned tamanhoBuffer, string nome, float tensaoDeOperacao, ProtocoloSerial protocolo) : Sensor(endereco, tamanhoBuffer, nome, tensaoDeOperacao, protocolo, TipoSensor::Virtual) {
@@ -12,8 +11,8 @@ SensorVirtual::SensorVirtual(unsigned endereco, unsigned tamanhoBuffer, string n
 SensorVirtual::~SensorVirtual() {
 }
 
-void SensorVirtual::comecarAquisicao() {
-    simularAmostras(tamanhoBuffer);
+void SensorVirtual::comecarAquisicao(unsigned quantidade) {
+    simularAmostras(quantidade);
 }
 
 void SensorVirtual::simularAmostras(unsigned quantidade) {
@@ -73,16 +72,3 @@ double SensorVirtual::limitarValor(double valor, double minimo, double maximo) {
     return valor;
 }
 
-string SensorVirtual::getDescricao() const {
-    stringstream ss;
-
-    ss << "Sensor Virtual"
-       << " | Endereco: " << endereco
-       << " | Nome: " << nome
-       << " | Tensao: " << tensaoDeOperacao << " V"
-       << " | Protocolo: " << protocoloToString(protocolo)
-       << " | Amostras no buffer: " << buffer.size()
-       << " | Tamanho maximo do buffer: " << tamanhoBuffer;
-
-    return ss.str();
-}

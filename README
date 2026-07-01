@@ -18,7 +18,6 @@ O sistema permite:
 * Configurar porta serial, baud rate e tamanho de buffer pela interface.
 * Plotar sinais em uma interface gráfica.
 * Exibir métricas de processamento em cards visuais.
-* Separar responsabilidades entre C++, API Flask e interface.
 
 A arquitetura foi pensada para simular um gateway de aquisição de dados, onde o backend em C++ concentra a lógica principal, enquanto Python atua como ponte de comunicação, API e interface visual.
 
@@ -312,8 +311,8 @@ Uma estrutura típica do projeto é:
 ```txt
 HybridSense-Gateway/
 │
-├── sistema/
-│   ├── include/
+├── Sistema/
+│   ├── Include/
 │   │   ├── sensor.h
 │   │   ├── sensor_virtual.h
 │   │   ├── sensor_real.h
@@ -323,7 +322,7 @@ HybridSense-Gateway/
 │   │   ├── socket.h
 │   │   └── conversor.h
 │   │
-│   └── src/
+│   └── Src/
 │       ├── main.cpp
 │       ├── sensor.cpp
 │       ├── sensor_virtual.cpp
@@ -334,12 +333,12 @@ HybridSense-Gateway/
 │       ├── socket.cpp
 │       └── conversor.cpp
 │
-├── api/
+├── API/
 │   ├── main.py
 │   └── routes.py
 │
-├── interface/
-│   ├── interface.py
+├── Interface/
+│   ├── main.py
 │   ├── api_client.py
 │   └── Logo_Politecnica.png
 │
@@ -348,9 +347,7 @@ HybridSense-Gateway/
 │
 ├── Makefile
 ├── init.bat
-├── init.sh
 ├── clean.bat
-├── clean.sh
 └── README.md
 ```
 
@@ -387,9 +384,7 @@ Principais métodos:
 ```cpp
 addAmostra(double)
 getBuffer()
-getUltimaAmostra()
-comecarAquisicao()
-getDescricao()
+comecarAquisicao(unsigned)
 ```
 
 ---
@@ -435,16 +430,13 @@ Implementam a classe `PortaSerial`.
 
 Responsabilidades:
 
-* Lidar com diferenças entre Windows e Linux.
+* Lidar com comunicação serial no Windows.
 * Abrir porta serial.
 * Configurar baud rate.
 * Ler linhas brutas.
 * Fechar conexão serial.
-* Listar portas disponíveis.
 
 No Windows, utiliza a API Win32.
-
-No Linux, utiliza `termios`.
 
 Essa classe não sabe nada sobre sensores. Ela apenas cuida da comunicação serial bruta.
 
@@ -612,7 +604,7 @@ Ele evita que a interface tenha código HTTP espalhado pelas telas.
 
 ---
 
-### 9.12 `interface.py`
+### 9.12 `main.py`
 
 Implementa a interface gráfica.
 
@@ -831,7 +823,7 @@ matplotlib   -> gráficos
 
 ## 12. Como compilar e executar
 
-O projeto possui scripts de inicialização para Windows e Linux.
+O projeto possui script de inicialização para Windows.
 
 A ordem correta de execução é:
 
@@ -842,7 +834,7 @@ A ordem correta de execução é:
 4. Iniciar a interface gráfica
 ```
 
-Os scripts `init.bat` e `init.sh` automatizam esse processo.
+O script `init.bat` automatiza esse processo.
 
 ---
 
@@ -890,34 +882,6 @@ Todos os processos foram iniciados!
 ===========================================
 ```
 
----
-
-## 14. Inicialização no Linux
-
-Dê permissão de execução:
-
-```bash
-chmod +x init.sh
-```
-
-Execute:
-
-```bash
-./init.sh
-```
-
-O script deve compilar e iniciar os serviços da mesma forma que no Windows.
-
-Em alguns sistemas Linux, pode ser necessário dar permissão de acesso à porta serial:
-
-```bash
-sudo usermod -a -G dialout $USER
-```
-
-Depois disso, faça logout/login ou reinicie a sessão.
-
----
-
 ## 15. Limpeza do projeto
 
 O projeto gera arquivos intermediários de compilação dentro da pasta:
@@ -932,13 +896,7 @@ E gera o executável:
 programa.exe
 ```
 
-No Linux, o executável pode ser:
-
-```txt
-programa
-```
-
-Para limpar os arquivos gerados, utilize os scripts `clean`.
+Para limpar os arquivos gerados, utilize o script `clean.bat`.
 
 ---
 
@@ -980,52 +938,6 @@ echo.
 echo Limpeza concluida.
 pause
 ```
-
----
-
-## 17. Limpeza no Linux
-
-Dê permissão:
-
-```bash
-chmod +x clean.sh
-```
-
-Execute:
-
-```bash
-./clean.sh
-```
-
-Exemplo de `clean.sh`:
-
-```bash
-#!/bin/bash
-
-echo "==========================================="
-echo "Limpando arquivos gerados..."
-echo "==========================================="
-
-if [ -d "obj" ]; then
-    rm -rf obj
-    echo "Pasta obj removida."
-fi
-
-if [ -f "programa.exe" ]; then
-    rm -f programa.exe
-    echo "programa.exe removido."
-fi
-
-if [ -f "programa" ]; then
-    rm -f programa
-    echo "programa removido."
-fi
-
-echo
-echo "Limpeza concluida."
-```
-
----
 
 ## 18. Makefile
 

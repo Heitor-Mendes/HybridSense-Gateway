@@ -14,10 +14,6 @@ using namespace std;
 struct DadosSensor {
     unsigned endereco;
     string nome;
-    float tensaoDeOperacao;
-    string protocolo;
-    string tipo;
-    unsigned quantidadeAmostras;
 };
 
 struct Resultado {
@@ -39,7 +35,6 @@ class SensorManager {
         unsigned adicionarSensorVirtual(string nome, float tensaoDeOperacao, ProtocoloSerial protocolo, unsigned tamanhoBuffer);
         bool removerSensor(unsigned endereco);
 
-        vector<DadosSensor> listarSensores() const;
         vector<DadosSensor> listarSensoresVirtuais() const;
 
         vector<double> simularSensorVirtual(unsigned endereco);
@@ -51,7 +46,6 @@ class SensorManager {
         Resultado processarSinaisSensorReal();
 
         void limparTodos();
-        unsigned getQuantidadeSensores() const;
 
     private:
         vector<Sensor*> sensores;
@@ -62,10 +56,6 @@ class SensorManager {
         string portaSerialRealAtual;
         int baudRateRealAtual;
         unsigned tamanhoBufferRealAtual;
-
-        // Ponto de personalizacao futuramente
-        static const unsigned AMOSTRAS_PADRAO_SIMULACAO = 100;
-        static const unsigned JANELA_PADRAO_MEDIA_MOVEL = 5;
 
         Sensor* buscarSensor(unsigned endereco) const;
         DadosSensor montarDadosSensor(const Sensor* sensor) const;

@@ -28,24 +28,12 @@ class Sensor{
         // Getters
         unsigned              getEndereco()           const;
         string                getNome()               const;
-        float                 getTensaoDeOperacao()   const;
-        ProtocoloSerial       getProtocolo()          const;
         TipoSensor            getTipoSensor()         const;
         const vector<double>& getBuffer()             const;
-        double                getUltimaAmostra()      const;
-        virtual string        getDescricao()          const = 0;
 
         // Metodos
         void         addAmostra(double);
-        virtual void comecarAquisicao() = 0;
-
-        //Utilidades
-        static string          protocoloToString(ProtocoloSerial);
-        static string          tipoToString(TipoSensor);
-        static ProtocoloSerial stringToProtocolo(string);
-        static TipoSensor      stringToTipo(string);
-        
-
+        virtual void comecarAquisicao(unsigned) = 0;
 
     protected:
         unsigned        endereco;

@@ -19,7 +19,6 @@ class TratadorDeRequisicoes {
         string extrairString(const string& json, const string& chave) const;
         double extrairDouble(const string& json, const string& chave) const;
         unsigned extrairUnsigned(const string& json, const string& chave) const;
-        bool contemChave(const string& json, const string& chave) const;
 
         ProtocoloSerial converterProtocolo(const string& protocolo) const;
 

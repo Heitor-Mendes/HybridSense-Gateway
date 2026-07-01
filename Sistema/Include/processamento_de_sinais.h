@@ -29,7 +29,14 @@ class ProcessadorDeSinais {
         double q; // Ruido do processo
         double r; // Ruido da medicao
         double k; // Ganho de Kalman
+
         bool kalmanInicializado;
+        
+        // Ponto de personalizacao futuramente
+        static const unsigned JANELA_MEDIA_MOVEL_PADRAO = 5;
+        static const unsigned AMOSTRAS_PADRAO_SIMULACAO = 100;
+        
+        
 };
 
 #endif

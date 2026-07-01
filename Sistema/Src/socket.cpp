@@ -7,7 +7,6 @@ ServidorTCP::ServidorTCP(int porta) {
     this->porta = porta;
     servidorFD = INVALID_SOCKET_VAL;
 
-#ifdef _WIN32
     winsockInicializado = false;
     WSADATA wsa;
 
@@ -16,7 +15,6 @@ ServidorTCP::ServidorTCP(int porta) {
     }
 
     winsockInicializado = true;
-#endif
 }
 
 ServidorTCP::~ServidorTCP() {
@@ -25,11 +23,9 @@ ServidorTCP::~ServidorTCP() {
         servidorFD = INVALID_SOCKET_VAL;
     }
 
-#ifdef _WIN32
     if (winsockInicializado) {
         WSACleanup();
     }
-#endif
 }
 
 void ServidorTCP::iniciar() {

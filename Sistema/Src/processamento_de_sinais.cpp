@@ -37,7 +37,7 @@ vector<double> ProcessadorDeSinais::mediaMovel(const vector<double>& dados, unsi
     }
 
     if (janela == 0) {
-        janela = 3;
+        janela = JANELA_MEDIA_MOVEL_PADRAO;
     }
 
     vector<double> resultado;
