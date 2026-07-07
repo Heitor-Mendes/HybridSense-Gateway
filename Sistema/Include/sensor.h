@@ -43,6 +43,7 @@ class Sensor{
         TipoSensor      tipo;
         unsigned        tamanhoBuffer;
         vector<double>  buffer;
+        static const unsigned AMOSTRAS_PADRAO_SIMULACAO = 100;
 
     private:
 };

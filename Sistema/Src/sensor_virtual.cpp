@@ -12,6 +12,9 @@ SensorVirtual::~SensorVirtual() {
 }
 
 void SensorVirtual::comecarAquisicao(unsigned quantidade) {
+    if(quantidade == 0) {
+        quantidade = AMOSTRAS_PADRAO_SIMULACAO;
+    }
     simularAmostras(quantidade);
 }
 
